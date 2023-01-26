@@ -1,6 +1,9 @@
 import java.io.*;
 
 public class FormataExtratoBradesco {
+    /**
+     * @param args
+     */
     public static void main(String[] args) {
 
         
@@ -19,6 +22,8 @@ public class FormataExtratoBradesco {
                     String credito = null;
                     String debito = null;
                     String descricaoAnterior = null;
+                    String saldo = null;
+                    int numRegistro=0;
         try {
             if( args.length >= 1)
                 
@@ -47,7 +52,8 @@ public class FormataExtratoBradesco {
                         data = campos[0];
                         descricao = campos[1];
                         codigo = campos[2];
-                        credito = campos[3]; 
+                        credito = campos[3];
+                        //saldo = campos[5]; 
                         debito = "0";   
                         }
                     
@@ -65,9 +71,11 @@ public class FormataExtratoBradesco {
                                 line = bufferedReader.readLine();
                             }
                         }
-                        System.out.println( data + ";" + descricao + ";" + credito + ";" + debito);
+                        System.out.println( data + ";" + descricao + ";" + codigo + ";"  + credito + ";" + debito + ";" + ";");
+                        numRegistro++;
                 
                 } while( line != null);
+                //System.out.println("\n\n numero de registros: " + numRegistro);                
 
 
             } //end if                       
