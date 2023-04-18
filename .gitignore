@@ -1,4 +1,7 @@
 .DS_Store
+# data files
+*.csv
+ 
 # Compiled class file
 *.class
 
