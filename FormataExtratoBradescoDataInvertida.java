@@ -1,4 +1,6 @@
 import java.io.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 public class FormataExtratoBradescoDataInvertida {
     /**
@@ -77,7 +79,24 @@ public class FormataExtratoBradescoDataInvertida {
                                 line = bufferedReader.readLine();
                             }
                         }
-                        System.out.println( "20" + ano + "-" + mes + "-" + dia + ";" + descricao + ";" + codigo + ";"  + credito + ";" + debito + ";" + ";");
+                        System.out.print( "20" + ano + "-" + mes + "-" + dia + ";" + descricao + ";" + codigo + ";"  + credito + ";" + debito + ";" + ";");
+
+                        String registroConcatenado = dia + "/" + mes + "/" + ano  + descricao + codigo + credito + debito;
+
+                        //System.out.print(registroConcatenado);
+
+                        
+
+                        MessageDigest md = MessageDigest.getInstance("MD5");
+                        md.update(registroConcatenado.getBytes());
+                        byte[] digest = md.digest();
+                        StringBuffer hexString = new StringBuffer();
+                        for (int i = 0; i < digest.length; i++) {
+                            hexString.append(Integer.toHexString(0xFF & digest[i]));
+                        }
+                    
+                        System.out.println(hexString.toString() + ";");
+
                         numRegistro++;
                 
                 } while( line != null);
@@ -107,5 +126,10 @@ public class FormataExtratoBradescoDataInvertida {
             // Or we could just do this: 
             // ex.printStackTrace();
         }
+        catch(NoSuchAlgorithmException ex){
+
+            System.out.println("erro algoritmo");
+        }
+
     }//main
 }//class 
