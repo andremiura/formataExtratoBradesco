@@ -87,7 +87,7 @@ public class FormataExtratoBradescoDataInvertida {
 
                         
 
-                        MessageDigest md = MessageDigest.getInstance("MD5");
+                        MessageDigest md = MessageDigest.getInstance("SHA-256");
                         md.update(registroConcatenado.getBytes());
                         byte[] digest = md.digest();
                         StringBuffer hexString = new StringBuffer();
