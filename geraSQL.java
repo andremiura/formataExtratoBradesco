@@ -1,4 +1,5 @@
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -6,7 +7,46 @@ public class geraSQL {
     /**
      * @param args
      */
-    public static void main(String[] args) {
+
+    public static String calculateSHA256(String input) {
+        try {
+            // Obter instância do MessageDigest para SHA-256
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            
+            // Calcular o hash da string de entrada
+            byte[] hash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
+            
+            // Converter o array de bytes para uma representação hexadecimal
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+            
+            return hexString.toString();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }// calculateSHA256
+
+    public static String invertDate( String[] data){
+
+        String dia = data[0];
+        String mes = data[1];
+        String ano = data[2];
+
+        String dataInvertida = "20"+ ano +"-"+mes+"-"+dia;
+
+        return dataInvertida;
+
+    } //invertDate
+
+
+     public static void main(String[] args) {
 
         
         // The name of the file to open.
@@ -28,6 +68,7 @@ public class geraSQL {
                     String debito = null;
                     String descricaoAnterior = null;
                     String saldo = null;
+                    String hash256 = null;
                     int numRegistro=0;
         try {
 
@@ -58,9 +99,7 @@ public class geraSQL {
                         if(campos.length != 2){
                         
                         data = campos[0].split("/");
-                        dia = data[0];
-                        mes = data[1];
-                        ano = data[2];
+                        
 
                         descricao = campos[1];
                         codigo = campos[2];
@@ -89,25 +128,15 @@ public class geraSQL {
                             }
                         }
 
-                        //String registroCompletoCSV = data + ";" + descricao + ";" + codigo + ";"  + credito + ";" + debito + ";" + ";";
-                        //System.out.print(registroCompletoCSV);
 
-                        String registroConcatenado = data + descricao + codigo + credito + debito;
+                        String dataInvertida = invertDate(data);
+                        String registroConcatenado = dataInvertida  + descricao + codigo + credito + debito;
 
-                        //String registroConcatenado = dia + "/" + mes + "/" + ano  + descricao + codigo + credito + debito;
-
-                        MessageDigest md = MessageDigest.getInstance("SHA-256");
-                        md.update(registroConcatenado.getBytes());
-                        byte[] digest = md.digest();
-                        StringBuffer hexString = new StringBuffer();
-                        for (int i = 0; i < digest.length; i++) {
-                            hexString.append(Integer.toHexString(0xFF & digest[i]));
-                        }
+                        hash256 = calculateSHA256(registroConcatenado);
                         
-                        String hash256 = hexString.toString();
-                        String dataInvertida = "20"+ ano +"-"+mes+"-"+dia;
+                        //System.out.println(registroConcatenado);
 
-                        
+                
                         String sql = "INSERT INTO bank_statements (date,historic, code, credit, debit, sha256, created_at,updated_at) VALUES ('"+dataInvertida+"','"+descricao+"','"+codigo+"','"+credito+"','"+debito+"','"+hash256+"',now(),now());";
                         
                         System.out.println(sql);
@@ -141,9 +170,6 @@ public class geraSQL {
             // Or we could just do this: 
             // ex.printStackTrace();
         }
-        catch(NoSuchAlgorithmException ex){
-
-            System.out.println("erro algoritmo");
-        }
+        
     }//main
 }//class 

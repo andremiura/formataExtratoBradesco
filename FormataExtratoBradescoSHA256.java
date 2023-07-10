@@ -56,13 +56,18 @@ public class FormataExtratoBradescoSHA256 {
                         data = campos[0];
                         descricao = campos[1];
                         codigo = campos[2];
-                        credito = campos[3];
+                        credito = campos[3].replace(".","");
+                        if(credito.length() == 0) credito = "0"; 
                         //saldo = campos[5]; 
                         debito = "0";   
                         }
                     
-                        if( campos.length > 4 )
-                            debito = campos[4];
+                        if( campos.length > 4 ){
+                            debito = campos[4].replace(".","");
+                            if(debito.length() == 0) debito = "0";
+
+                        }    
+                            
 
                     
                         if((line = bufferedReader.readLine()) != null ){
