@@ -1,6 +1,4 @@
 import java.io.*;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 
 public class FormataExtratoBradescoSHA256 {
     /**
@@ -85,18 +83,10 @@ public class FormataExtratoBradescoSHA256 {
                         System.out.print(registroCompletoCSV);
 
                         String registroConcatenado = data + descricao + codigo + credito + debito;
-
-
-
-                        MessageDigest md = MessageDigest.getInstance("SHA-256");
-                        md.update(registroConcatenado.getBytes());
-                        byte[] digest = md.digest();
-                        StringBuffer hexString = new StringBuffer();
-                        for (int i = 0; i < digest.length; i++) {
-                            hexString.append(Integer.toHexString(0xFF & digest[i]));
-                        }
-                    
-                        System.out.println(hexString.toString() + ";");
+                        
+                        String hash = HashUtils.sha256Hex(registroConcatenado);
+                        
+                        System.out.println(hash + ";");
 
 
                         numRegistro++;
@@ -128,9 +118,6 @@ public class FormataExtratoBradescoSHA256 {
             // Or we could just do this: 
             // ex.printStackTrace();
         }
-        catch(NoSuchAlgorithmException ex){
-
-            System.out.println("erro algoritmo");
-        }
+        
     }//main
 }//class 
