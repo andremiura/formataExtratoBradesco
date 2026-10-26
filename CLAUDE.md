@@ -19,6 +19,8 @@ java geraSQL extrato.csv > extrato.sql              # generate INSERT statements
 
 ## Input format and parsing model
 
+The input grammar, including the line shapes that crash the parser, is in `GRAMATICA.md`.
+
 Per the README, the input CSV must have the bank's header removed, and everything from the "total" line down must be removed too. The format has changed before, so check the file by eye before running the tools on it.
 
 All tools share the same copy-pasted parsing loop (`main` → `BufferedReader` → `do/while`):
