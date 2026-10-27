@@ -1,7 +1,11 @@
 utilização: java FormataExtratoBradesco extrato.csv
 
-    extrato.csv não deve ter cabeçalho, nem os dados abaixo da linha de total inclusive.
-    Isso é para se observar o arquivo a fim de ver se não foi alterado o formato, visto que já ocorreu antes.
+    extrato.csv é usado como vem do banco (Bradesco_*.csv), com cabeçalho e linha de total.
+    O cabeçalho é conferido contra o padrão conhecido; se o banco mudar o formato, o programa
+    mostra a linha divergente e termina com erro. Ver GRAMATICA.md.
+
+ExtratoBradesco.java
+    - leitura do extrato usada por todos os programas: confere o cabeçalho e junta as linhas de continuação.
 
 FormataExtratoBradesco.java
     - formata extrato em csv do Bradesco, transformando o campo da descrição em uma única linha.

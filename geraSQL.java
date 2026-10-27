@@ -52,24 +52,8 @@ public class geraSQL {
         // The name of the file to open.
         String fileName = null;
 
-        
-        // This will reference one line at a time
-        String line = null;
-
-        String[] campos = null;
-
-                    String[] data = null;
-                    String dia = null;
-                    String mes = null;
-                    String ano = null;
-                    String descricao = null;
-                    String codigo = null;
-                    String credito = null;
-                    String debito = null;
-                    String descricaoAnterior = null;
-                    String saldo = null;
-                    String hash256 = null;
-                    int numRegistro=0;
+        String hash256 = null;
+        int numRegistro=0;
         try {
 
             
@@ -80,80 +64,33 @@ public class geraSQL {
             else fileName = "";
              
 
-            // FileReader reads text files in the default encoding.
-            FileReader fileReader = 
-                new FileReader(fileName);
+            for (String[] registro : ExtratoBradesco.le(fileName)) {
 
-            // Always wrap FileReader in BufferedReader.
-            BufferedReader bufferedReader = 
-                new BufferedReader(fileReader);
+                String[] data = registro[0].split("/");
 
-            
-            if((line = bufferedReader.readLine()) != null ){
-
-                do{
-                       
-                       campos = line.split(";");
-                    
-                    
-                        if(campos.length != 2){
-                        
-                        data = campos[0].split("/");
-                        
-
-                        descricao = campos[1];
-                        codigo = campos[2];
-                        credito = campos[3].replace(".","").replace(",",".");
-                        if(credito.length() == 0) credito = "0"; 
-                        //saldo = campos[5]; 
-                        debito = "0";   
-                        }
-                    
-                        if( campos.length > 4 ){
-                            debito = campos[4].replace(".","").replace(",",".");
-                            if(debito.length() == 0) debito = "0";
-
-                        }    
-                            
-
-                    
-                        if((line = bufferedReader.readLine()) != null ){
-
-                            campos = line.split(";");
-                        
-                            if( campos.length == 2 ){
-                            
-                                descricao = descricao.concat(" " + campos[1]);
-                                line = bufferedReader.readLine();
-                            }
-                        }
+                String descricao = registro[1];
+                String codigo = registro[2];
+                String credito = registro[3].replace("\"","").replace(".","").replace(",",".");
+                if(credito.length() == 0) credito = "0"; 
+                String debito = registro[4].replace("\"","").replace(".","").replace(",",".");
+                if(debito.length() == 0) debito = "0";
 
 
-                        String dataInvertida = invertDate(data);
-                        String registroConcatenado = dataInvertida  + descricao + codigo + credito + debito;
+                String dataInvertida = invertDate(data);
+                String registroConcatenado = dataInvertida  + descricao + codigo + credito + debito;
 
-                        hash256 = calculateSHA256(registroConcatenado);
-                        
-                        //System.out.println(registroConcatenado);
-
+                hash256 = calculateSHA256(registroConcatenado);
                 
-                        String sql = "INSERT INTO bank_statements (date,historic, code, credit, debit, sha256, created_at,updated_at) VALUES ('"+dataInvertida+"','"+descricao+"','"+codigo+"','"+credito+"','"+debito+"','"+hash256+"',now(),now());";
-                        
-                        System.out.println(sql);
+                //System.out.println(registroConcatenado);
 
-                        numRegistro++;
+        
+                String sql = "INSERT INTO bank_statements (date,historic, code, credit, debit, sha256, created_at,updated_at) VALUES ('"+dataInvertida+"','"+descricao+"','"+codigo+"','"+credito+"','"+debito+"','"+hash256+"',now(),now());";
                 
-                } while( line != null);
-                //System.out.println("\n\n numero de registros: " + numRegistro);                
+                System.out.println(sql);
 
-
-            } //end if                       
-
-      
-            
-
-            // Always close files.
-            bufferedReader.close();         
+                numRegistro++;
+            }
+            //System.out.println("\n\n numero de registros: " + numRegistro);
         }
         catch(FileNotFoundException ex) {
             System.out.println(

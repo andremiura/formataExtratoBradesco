@@ -6,100 +6,46 @@ public class FormataExtratoBradesco {
      */
     public static void main(String[] args) {
 
-        
+
         // The name of the file to open.
         String fileName = null;
 
-        
-        // This will reference one line at a time
-        String line = null;
-
-        String[] campos = null;
-
-                    String data = null;
-                    String descricao = null;
-                    String codigo = null;
-                    String credito = null;
-                    String debito = null;
-                    String descricaoAnterior = null;
-                    String saldo = null;
-                    int numRegistro=0;
+        int numRegistro=0;
         try {
             if( args.length >= 1)
-                
+
                 // The name of the file to open.
                 fileName = args[0];
             else fileName = "";
-             
-
-            // FileReader reads text files in the default encoding.
-            FileReader fileReader = 
-                new FileReader(fileName);
-
-            // Always wrap FileReader in BufferedReader.
-            BufferedReader bufferedReader = 
-                new BufferedReader(fileReader);
-
-            
-            if((line = bufferedReader.readLine()) != null ){
-
-                do{
-                       
-                       campos = line.split(";");
-                    
-                    
-                        if(campos.length != 2){
-                        data = campos[0];
-                        descricao = campos[1];
-                        codigo = campos[2];
-                        credito = campos[3];
-                        //saldo = campos[5]; 
-                        debito = "0";   
-                        }
-                    
-                        if( campos.length > 4 )
-                            debito = campos[4];
-
-                    
-                        if((line = bufferedReader.readLine()) != null ){
-
-                            campos = line.split(";");
-                        
-                            if( campos.length == 2 ){
-                            
-                                descricao = descricao.concat(" " + campos[1]);
-                                line = bufferedReader.readLine();
-                            }
-                        }
-                        System.out.println( data + ";" + descricao + ";" + codigo + ";"  + credito + ";" + debito + ";" + ";");
-                        numRegistro++;
-                
-                } while( line != null);
-                //System.out.println("\n\n numero de registros: " + numRegistro);                
 
 
-            } //end if                       
+            for (String[] registro : ExtratoBradesco.le(fileName)) {
 
-      
-            
+                String data = registro[0];
+                String descricao = registro[1];
+                String codigo = registro[2];
+                String credito = registro[3];
+                String debito = registro[4];
 
-            // Always close files.
-            bufferedReader.close();         
+                System.out.println( data + ";" + descricao + ";" + codigo + ";"  + credito + ";" + debito + ";" + ";");
+                numRegistro++;
+            }
+            //System.out.println("\n\n numero de registros: " + numRegistro);
         }
         catch(FileNotFoundException ex) {
             System.out.println(
-                "Não foi possível abrir o arquivo '" + 
-                fileName + "'"); 
+                "Não foi possível abrir o arquivo '" +
+                fileName + "'");
             System.out.println(
                 "uso: java FormataExtratoBradesco extrato.csv"
-            );                   
+            );
         }
         catch(IOException ex) {
             System.out.println(
-                "Error reading file '" 
-                + fileName + "'");                  
-            // Or we could just do this: 
+                "Error reading file '"
+                + fileName + "'");
+            // Or we could just do this:
             // ex.printStackTrace();
         }
     }//main
-}//class 
+}//class
