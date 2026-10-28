@@ -13,6 +13,7 @@ javac *.java                                        # compile everything (Extrat
 java FormataExtratoBradesco extrato.csv             # run a single tool; output goes to stdout
 java geraSQL extrato.csv > extrato.sql              # generate INSERT statements
 ./bradesco.py -b|-di|-md5|-sha256 extrato.csv       # Python wrapper that dispatches to the compiled classes (needs .class files in cwd)
+cc -std=c99 -Wall -Wextra -O2 formataExtratoBradesco.c -o formataExtratoBradesco   # C port of FormataExtratoBradesco (Linux and macOS)
 ```
 
 `*.csv`, `*.sql` and `*.class` are gitignored, so no sample data is committed. To test changes, compare output against a real statement export (all variants should emit the same number of records).
@@ -40,3 +41,7 @@ The tools read the CSV exactly as exported by the bank (`Bradesco_*.csv`, ISO-88
 The hash is the record's deduplication ID. Its input differs between variants (date format, amount normalization, byte encoding), so hashes from different tools are **not** interchangeable. Changing what gets concatenated or how amounts are normalized changes the IDs of records already loaded. `geraSQL` builds SQL by string concatenation with no escaping, so a `'` in a description will break the statement.
 
 Parsing changes go in `ExtratoBradesco.java`. Output and hashing are still per-variant.
+
+## C port
+
+`formataExtratoBradesco.c` is a standalone C99 port of `FormataExtratoBradesco` (standard library only), so it can be shipped as a single command and compiled on Linux or macOS. Its output must stay byte-identical to the Java version, including Java's `String.split(";")` trailing-empty behavior, the stderr layout-error messages, and Latin-1 → UTF-8 output. When parsing changes in `ExtratoBradesco.java`, mirror it in the C file and `cmp` both outputs on a real export.
