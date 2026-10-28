@@ -3,7 +3,8 @@
  *
  * Versão em C do FormataExtratoBradesco.java (+ ExtratoBradesco.java).
  * Lê o extrato CSV do Bradesco como vem do banco (ver GRAMATICA.md), confere
- * o cabeçalho e imprime uma linha por transação, com a descrição já juntada.
+ * o cabeçalho e imprime uma linha por transação (do extrato e da seção
+ * "Últimos Lançamentos", se houver), com a descrição já juntada.
  * A saída é igual, byte a byte, à da versão Java.
  *
  * compilar: cc -std=c99 -Wall -Wextra -O2 formataExtratoBradesco.c -o formataExtratoBradesco
@@ -20,6 +21,9 @@
 #define LINHA2 "Data;Hist\xF3rico;Docto.;Cr\xE9" "dito (R$);D\xE9" "bito (R$);Saldo (R$);"
 #define TOTAL ";Total;"
 #define SALDO_ANTERIOR "SALDO ANTERIOR"
+/* seção depois do Total com os lançamentos posteriores ao período, em ISO-8859-1 */
+#define ULTIMOS "\xDAltimos Lan\xE7" "amentos"
+#define LINHA_ULTIMOS "Data;Hist\xF3rico;Docto.;Cr\xE9" "dito (R$);D\xE9" "bito (R$);"
 
 static const char *fileName;
 
@@ -214,35 +218,20 @@ typedef struct {
     char *campo[5];
 } Registro;
 
-int main(int argc, char *argv[])
+static Registro *registros = NULL;
+static size_t numRegistros = 0, capRegistros = 0;
+
+/*
+ * Lê transações até a linha de Total, acrescentando-as em registros.
+ * Devolve o número da linha de Total.
+ */
+static int leRegistros(FILE *f, int numLinha)
 {
-    FILE *f;
     char *line;
     char **campos;
     int numCampos;
-    int numLinha = 2;
     int ignorando = 0;   /* dentro do SALDO ANTERIOR */
-    Registro *registros = NULL;
-    size_t numRegistros = 0, cap = 0;
     Registro *registro = NULL;
-    size_t i;
-
-    fileName = argc >= 2 ? argv[1] : "";
-
-    f = fopen(fileName, "rb");
-    if (f == NULL) {
-        printf("Não foi possível abrir o arquivo '%s'\n", fileName);
-        printf("uso: formataExtratoBradesco extrato.csv\n");
-        return 1;
-    }
-
-    line = leLinha(f);
-    if (line == NULL || !casaLinha1(line))
-        erro(1, LINHA1_PADRAO, line ? line : "null");
-
-    line = leLinha(f);
-    if (line == NULL || strcmp(line, LINHA2) != 0)
-        erro(2, "Data;Histórico;Docto.;Crédito (R$);Débito (R$);Saldo (R$);", line ? line : "null");
 
     for (;;) {
         line = leLinha(f);
@@ -263,9 +252,9 @@ int main(int argc, char *argv[])
                 continue;
             }
 
-            if (numRegistros == cap) {
-                cap = cap ? cap * 2 : 64;
-                registros = aloca(registros, cap * sizeof *registros);
+            if (numRegistros == capRegistros) {
+                capRegistros = capRegistros ? capRegistros * 2 : 64;
+                registros = aloca(registros, capRegistros * sizeof *registros);
             }
             registro = &registros[numRegistros++];
             registro->campo[0] = copia(campos[0]);
@@ -289,6 +278,49 @@ int main(int argc, char *argv[])
         }
         else
             erro(numLinha, "transação (dd/mm/aa;...) ou continuação (;...)", line);
+    }
+
+    return numLinha;
+}
+
+int main(int argc, char *argv[])
+{
+    FILE *f;
+    char *line;
+    int numLinha;
+    size_t i;
+
+    fileName = argc >= 2 ? argv[1] : "";
+
+    f = fopen(fileName, "rb");
+    if (f == NULL) {
+        printf("Não foi possível abrir o arquivo '%s'\n", fileName);
+        printf("uso: formataExtratoBradesco extrato.csv\n");
+        return 1;
+    }
+
+    line = leLinha(f);
+    if (line == NULL || !casaLinha1(line))
+        erro(1, LINHA1_PADRAO, line ? line : "null");
+
+    line = leLinha(f);
+    if (line == NULL || strcmp(line, LINHA2) != 0)
+        erro(2, "Data;Histórico;Docto.;Crédito (R$);Débito (R$);Saldo (R$);", line ? line : "null");
+
+    numLinha = leRegistros(f, 2);
+
+    /* seção opcional depois do Total; o resto do arquivo é ignorado */
+    while ((line = leLinha(f)) != NULL) {
+        numLinha++;
+        if (strcmp(line, ULTIMOS) == 0) {
+            line = leLinha(f);
+            numLinha++;
+            if (line == NULL || strcmp(line, LINHA_ULTIMOS) != 0)
+                erro(numLinha, "Data;Histórico;Docto.;Crédito (R$);Débito (R$);", line ? line : "null");
+
+            leRegistros(f, numLinha);
+            break;
+        }
     }
 
     fclose(f);

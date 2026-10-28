@@ -24,7 +24,7 @@ The input grammar and the rules for header, continuation and Total lines are in 
 
 The tools read the CSV exactly as exported by the bank (`Bradesco_*.csv`, ISO-8859-1, CR line endings). Parsing lives in one place, `ExtratoBradesco.le(fileName)`, which returns `{data, descricao, codigo, credito, debito}` per transaction:
 - Lines 1 and 2 are checked against a known header pattern (`ExtratoBradesco.LINHA1` / `LINHA2`). On mismatch it prints expected vs. found to stderr and exits 1. This is how a new layout change gets noticed.
-- The body runs from line 3 to the line before the first `;Total;`. Everything after it is ignored.
+- The body runs from line 3 to the line before the first `;Total;`. After it, an optional `Últimos Lançamentos` section (its own header without the Saldo column, then the same transaction/continuation lines up to another `;Total;`) is parsed the same way and its records are appended to the list. Everything else after the first Total is ignored.
 - A line starting with `dd/mm/yy;` starts a transaction. A line starting with `;` continues the previous description (`" " + field 2`), and there can be several. `SALDO ANTERIOR` is skipped. Any other line is an error.
 - Field values are passed through as-is (quoted, debits negative). `debito` defaults to `"0"` when the 5th field is missing.
 

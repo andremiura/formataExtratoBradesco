@@ -9,7 +9,8 @@ import java.util.regex.Pattern;
  *
  * Confere o cabeçalho (linhas 1 e 2) contra o padrão conhecido e aborta se o
  * layout mudou. Devolve as transações entre o cabeçalho e a linha de Total,
- * com as linhas de continuação já concatenadas na descrição.
+ * seguidas das da seção "Últimos Lançamentos", se houver, com as linhas de
+ * continuação já concatenadas na descrição.
  */
 public class ExtratoBradesco {
 
@@ -21,6 +22,10 @@ public class ExtratoBradesco {
     static final Pattern TRANSACAO = Pattern.compile("^\\d{2}/\\d{2}/\\d{2};.*");
     static final String TOTAL = ";Total;";
     static final String SALDO_ANTERIOR = "SALDO ANTERIOR";
+
+    // seção depois do Total com os lançamentos posteriores ao período
+    static final String ULTIMOS = "Últimos Lançamentos";
+    static final String LINHA_ULTIMOS = "Data;Histórico;Docto.;Crédito (R$);Débito (R$);";
 
     /**
      * @return lista de {data, descricao, codigo, credito, debito}
@@ -42,58 +47,84 @@ public class ExtratoBradesco {
             if (line == null || !line.equals(LINHA2))
                 erro(fileName, 2, LINHA2, line);
 
-            String[] registro = null;
-            boolean ignorando = false;   // dentro do SALDO ANTERIOR
-            int numLinha = 2;
+            int numLinha = leRegistros(bufferedReader, fileName, 2, registros);
 
-            while (true) {
-                line = bufferedReader.readLine();
+            // seção opcional depois do Total; o resto do arquivo é ignorado
+            while ((line = bufferedReader.readLine()) != null) {
                 numLinha++;
+                if (line.equals(ULTIMOS)) {
+                    line = bufferedReader.readLine();
+                    numLinha++;
+                    if (line == null || !line.equals(LINHA_ULTIMOS))
+                        erro(fileName, numLinha, LINHA_ULTIMOS, line);
 
-                if (line == null)
-                    erro(fileName, numLinha, "linha começando com " + TOTAL, "fim do arquivo");
-
-                if (line.startsWith(TOTAL))
+                    leRegistros(bufferedReader, fileName, numLinha, registros);
                     break;
-
-                String[] campos = line.split(";");
-
-                if (TRANSACAO.matcher(line).matches()) {
-                    if (registro != null)
-                        registros.add(registro);
-
-                    if (campos[1].trim().equals(SALDO_ANTERIOR)) {
-                        registro = null;
-                        ignorando = true;
-                        continue;
-                    }
-
-                    registro = new String[] {
-                        campos[0],
-                        campos[1],
-                        campos.length > 2 ? campos[2] : "",
-                        campos.length > 3 ? campos[3] : "",
-                        campos.length > 4 ? campos[4] : "0"
-                    };
-                    ignorando = false;
                 }
-                else if (line.startsWith(";") && (registro != null || ignorando)) {
-                    // continuação da descrição da transação anterior
-                    if (registro != null && campos.length > 1)
-                        registro[1] = registro[1].concat(" " + campos[1]);
-                }
-                else
-                    erro(fileName, numLinha, "transação (dd/mm/aa;...) ou continuação (;...)", line);
             }
-
-            if (registro != null)
-                registros.add(registro);
         }
         finally {
             bufferedReader.close();
         }
 
         return registros;
+    }
+
+    /**
+     * Lê transações até a linha de Total, acrescentando-as em registros.
+     *
+     * @return número da linha de Total
+     */
+    static int leRegistros(BufferedReader bufferedReader, String fileName, int numLinha,
+                           List<String[]> registros) throws IOException {
+
+        String[] registro = null;
+        boolean ignorando = false;   // dentro do SALDO ANTERIOR
+
+        while (true) {
+            String line = bufferedReader.readLine();
+            numLinha++;
+
+            if (line == null)
+                erro(fileName, numLinha, "linha começando com " + TOTAL, "fim do arquivo");
+
+            if (line.startsWith(TOTAL))
+                break;
+
+            String[] campos = line.split(";");
+
+            if (TRANSACAO.matcher(line).matches()) {
+                if (registro != null)
+                    registros.add(registro);
+
+                if (campos[1].trim().equals(SALDO_ANTERIOR)) {
+                    registro = null;
+                    ignorando = true;
+                    continue;
+                }
+
+                registro = new String[] {
+                    campos[0],
+                    campos[1],
+                    campos.length > 2 ? campos[2] : "",
+                    campos.length > 3 ? campos[3] : "",
+                    campos.length > 4 ? campos[4] : "0"
+                };
+                ignorando = false;
+            }
+            else if (line.startsWith(";") && (registro != null || ignorando)) {
+                // continuação da descrição da transação anterior
+                if (registro != null && campos.length > 1)
+                    registro[1] = registro[1].concat(" " + campos[1]);
+            }
+            else
+                erro(fileName, numLinha, "transação (dd/mm/aa;...) ou continuação (;...)", line);
+        }
+
+        if (registro != null)
+            registros.add(registro);
+
+        return numLinha;
     }
 
     static void erro(String fileName, int numLinha, String esperado, String encontrado) {

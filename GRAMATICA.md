@@ -6,22 +6,27 @@ O arquivo é usado como vem do banco (ex.: `Bradesco_27102026_202404.csv`): ISO-
 ## Gramática (EBNF)
 
 ```ebnf
-arquivo            = cabecalho1 , cabecalho2 , { registro } , linha_total , { qualquer_linha } ;
+arquivo            = cabecalho1 , cabecalho2 , { registro } , linha_total ,
+                     { outra_linha } , [ ultimos , { qualquer_linha } ] ;
+ultimos            = "Últimos Lançamentos" , FIM_LINHA , cabecalho_ultimos ,
+                     { registro } , linha_total ;
+outra_linha        = qualquer_linha - ( "Últimos Lançamentos" , FIM_LINHA ) ;
 
 cabecalho1         = "Extrato de: Ag: " , num , " | Conta: " , num_conta ,
                      " | Entre " , data4 , " e " , data4 , FIM_LINHA ;
 cabecalho2         = "Data;Histórico;Docto.;Crédito (R$);Débito (R$);Saldo (R$);" , FIM_LINHA ;
+cabecalho_ultimos  = "Data;Histórico;Docto.;Crédito (R$);Débito (R$);" , FIM_LINHA ;
 
 registro           = linha_transacao , { linha_continuacao } ;
 linha_transacao    = data , ";" , descricao , ";" , codigo , ";" , credito , ";" , debito ,
-                     ";" , saldo , { ";" , campo } , FIM_LINHA ;
+                     [ ";" , saldo ] , { ";" , campo } , FIM_LINHA ;
 linha_continuacao  = ";" , texto_desc , { ";" , campo } , FIM_LINHA ;
 linha_total        = ";Total;" , { qualquer caractere } , FIM_LINHA ;
 
 data               = dig , dig , "/" , dig , dig , "/" , dig , dig ;   (* dd/mm/aa *)
 data4              = dig , dig , "/" , dig , dig , "/" , dig , dig , dig , dig ;
 credito, debito    = valor | "" ;
-saldo              = valor | "" ;        (* lido, mas ignorado *)
+saldo              = valor | "" ;        (* lido, mas ignorado; não existe em "Últimos Lançamentos" *)
 valor              = '"' , [ "-" ] , dig , { dig | "." } , "," , dig , dig , '"' ;   (* ex.: "-1.234,56" *)
 
 campo              = { qualquer caractere exceto ";" e FIM_LINHA } ;
@@ -32,9 +37,12 @@ FIM_LINHA          = "\r" | "\n" | "\r\n" ;
 
 - As linhas 1 e 2 são conferidas contra o padrão acima. Se não baterem, o programa escreve em stderr a linha,
   o esperado e o encontrado, e termina com código 1. Isso serve para perceber quando o banco mudar o layout de novo.
-- O corpo vai da linha 3 até a linha anterior ao primeiro `;Total;`. O que vem depois ("Últimos Lançamentos",
-  "Saldos Invest Fácil") é ignorado. Se não houver `;Total;`, é erro.
-- A transação com descrição `SALDO ANTERIOR` (normalmente a linha 3) é ignorada.
+- O corpo vai da linha 3 até a linha anterior ao primeiro `;Total;`. Se não houver `;Total;`, é erro.
+- Depois do Total, a seção "Últimos Lançamentos" é opcional. Se existir, a linha seguinte tem que ser
+  `cabecalho_ultimos` (senão é erro, como nas linhas 1 e 2), e os registros até o próximo `;Total;` são lidos com
+  as mesmas regras do corpo e entram no fim da lista, sem marca. Sem esse `;Total;`, é erro.
+- O resto do arquivo ("Os dados acima...", "Saldos Invest Fácil") é ignorado.
+- A transação com descrição `SALDO ANTERIOR` (normalmente a linha 3, e a primeira dos Últimos Lançamentos) é ignorada.
 - Cada linha de continuação (começa com `;`) acrescenta `" " + texto_desc` à descrição da transação anterior.
 - Qualquer outra linha no corpo é erro.
 - Os valores saem como vêm, com aspas e com o débito negativo. Exceções: `FormataExtratoBradescoSHA256` e `geraSQL`
